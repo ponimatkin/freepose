@@ -17,7 +17,7 @@ The Thirteenth International Conference on Learning Representations (ICLR 2025)
 <br>
 <br>
 <a href="https://openreview.net/pdf?id=1CIUkpoata">[Paper]</a>
-<a href="">[ArXiv]</a>
+<a href="https://arxiv.org/abs/2503.10307">[ArXiv]</a>
 <a href="https://ponimatkin.github.io/freepose/index.html">[Project page]</a>
 <br>
 </h3>

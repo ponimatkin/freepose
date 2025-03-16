@@ -130,7 +130,7 @@ If you use this code in your research, please cite the following paper:
 ```
 @inproceedings{ponimatkin2025d,
       title={{{6D}} {{Object}} {{Pose}} {{Tracking}} in {{Internet}} {{Videos}} for {{Robotic}} {{Manipulation}}},
-      author={Georgy Ponimatkin and Martin C{\'\i}fka and Tomas Soucek and M{\'e}d{\'e}ric Fourmy and Yann Labb{\'e} and Vladimir Petrik and Josef Sivic},
+      author={Georgy Ponimatkin and Martin C{\'\i}fka and Tom\'{a}\v{s} Sou\v{c}ek and M{\'e}d{\'e}ric Fourmy and Yann Labb{\'e} and Vladimir Petrik and Josef Sivic},
       booktitle={The Thirteenth International Conference on Learning Representations},
       year={2025},
 }

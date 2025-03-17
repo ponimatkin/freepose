@@ -37,7 +37,7 @@ The 3D assets can be downloaded by running the following script:
 ```
 bash download_meshes.sh
 ```
-This will download the 3D models that from Objaverse-LVIS and Google Scanned Object datasets, that are not pointclouds and do not cause errors when rendering the templates further on. Please note, that this operation takes a while and will require up to 2TB of disk space. After the data is downloaded and preprocessed, you can remove `google_scanned_objects` and `objaverse_models` folders to save the disk space.
+This will download the 3D models from Objaverse-LVIS and Google Scanned Object datasets, that are not pointclouds and do not cause errors when rendering the templates further on. Please note, that this operation takes a while and will require up to 2TB of disk space. After the data is downloaded and preprocessed, you can remove `google_scanned_objects` and `objaverse_models` folders to save the disk space.
 
 
 ### Rendering 3D model templates
@@ -81,7 +81,7 @@ This will generate the object proposals for the chosen dataset. The next step is
 ```
 python -m scripts.compute_scale --dataset <DATASET_NAME> --proposals data/results/<DATASET_NAME>/props-ground-box-0.3-text-0.5-ffa-22-top-0_<DATASET_NAME>-test.json
 ```
-This will generate new file `props-ground-box-0.3-text-0.5-ffa-22-top-0_<DATASET_NAME>-test_gpt4_scaled.json` which will have the scale estimation for each proposal. The final step is to run the inference on the proposals (this time again under SLURM array job):
+This will generate a new file `props-ground-box-0.3-text-0.5-ffa-22-top-0_<DATASET_NAME>-test_gpt4_scaled.json` which will have the scale estimation for each proposal. The final step is to run the inference on the proposals (this time again under SLURM array job):
 ```
 python -m scripts.dino_inference --dataset <DATASET_NAME> --proposals props-ground-box-0.3-text-0.5-ffa-22-top-0_<DATASET_NAME>-test_gpt4_scaled.json
 ```

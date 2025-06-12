@@ -50,7 +50,7 @@ if __name__ == "__main__":
     base_dataset_path = Path(__file__).parent.parent / "data" / "datasets" 
     filelist_path = Path(__file__).parent.parent / "data" / "mesh_cache.txt"
 
-    target_path = base_dataset_path / 'models_normalized'
+    target_path = Path(__file__).parent.parent / "data" / 'mesh_cache'
     target_path.mkdir(exist_ok=True, parents=True)
 
     with open(filelist_path, 'r') as f:

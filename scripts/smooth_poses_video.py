@@ -353,14 +353,14 @@ def main(args):
         mesh.vertices = mesh.vertices * scale
         
         pred_transforms, computed_tracks = predict_transforms(frames, transforms, mesh, K, masks=masks)
-
+        pred_transforms[:,:,3] = transforms[:,:,3] # use coarse translation
         pred_transforms = smooth_transforms(pred_transforms)
 
         df_out = df.iloc[list(range(len(df)))[::skip_n]]
         R = pred_transforms[:,:3,:3].reshape(-1,9)
         df_out["R"] = [' '.join(map(str,x)) for x in R]
-        #t = pred_transforms[:,:3,3]
-        #df_out["t"] = [' '.join(map(str,x)) for x in t]
+        t = pred_transforms[:,:3,3]
+        df_out["t"] = [' '.join(map(str,x)) for x in t]
         out_dfs.append(df_out)
 
         meshes_all.append(mesh) 

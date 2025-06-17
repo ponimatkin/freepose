@@ -48,53 +48,86 @@ class WebTemplateDataset(Dataset):
         idx = self.frame_index[self.frame_index == model_name].index[0]
         return self.__getitem__(idx)
 
+    def get_model_name(self, idx: int):
+        return self.frame_index[idx].replace('_', '')
+
     def __getitem__(self, idx: int):
-        tar_file = idx // 10 # 10 meshes per tar file
+        tar_file = idx // 10  # 10 meshes per tar file
         tar_path = self.wds_dir / f'shard-{tar_file:06d}.tar'
         tar_dict_path = self.wds_dir / f'shard-{tar_file:06d}.npy'
-        tar = tarfile.open(tar_path.as_posix())
 
-        if tar_dict_path.exists():
-            tar_dict = np.load(tar_dict_path, allow_pickle=True).item()
-        else:
-            tar_dict = {m.name: m for m in tar.getmembers()}
-            np.save(tar_dict_path, tar_dict, allow_pickle=True)
-        model_name = self.frame_index[idx].replace('_', '')
+        # Open the tar file once and use 'with' for automatic closing
+        with tarfile.open(tar_path.as_posix()) as tar:
+            # Load the tar dictionary if it exists
+            if tar_dict_path.exists():
+                tar_dict = np.load(tar_dict_path, allow_pickle=True).item()
+            else:
+                tar_dict = {m.name: m for m in tar.getmembers()}
+                np.save(tar_dict_path, tar_dict, allow_pickle=True)
 
-        templates, depths, masks, bboxes = [], [], [], []
-        for k in range(600):
-            tar_file_rgb = tar.extractfile(tar_dict[f"{model_name}_{k}.rgb.png"])
-            tar_file_depth = tar.extractfile(tar_dict[f"{model_name}_{k}.depth.png"])
-            image = Image.open(io.BytesIO(tar_file_rgb.read()))
-            depth = Image.open(io.BytesIO(tar_file_depth.read()))
+            model_name = self.frame_index[idx].replace('_', '')
 
-            image = torch.from_numpy(np.array(image.convert("RGB")) / 255).float()
-            depth = torch.from_numpy(np.array(depth) / 1000).float()
-            mask = depth > 0
+            # Preallocate lists for storing tensors
+            templates = []
+            depths = []
+            masks = []
+            bboxes = []
 
-            if mask.sum() < 100:
-                # if mask is too small, make it small square of 210x210
-                mask[105:315, 105:315] = True
-            bbox = mask_to_bbox(mask.numpy())
+            # Process all images in the tar file
+            for k in range(600):
+                rgb_file = tar_dict[f"{model_name}_{k}.rgb.png"]
+                depth_file = tar_dict[f"{model_name}_{k}.depth.png"]
 
-            templates.append(image)
-            depths.append(depth)
-            masks.append(mask)
-            bboxes.append(bbox)
+                # Extract RGB and depth files only once per iteration
+                tar_file_rgb = tar.extractfile(rgb_file)
+                tar_file_depth = tar.extractfile(depth_file)
 
-        tar.close()
+                # Open images directly from the tar stream
+                image = Image.open(io.BytesIO(tar_file_rgb.read()))
+                depth = Image.open(io.BytesIO(tar_file_depth.read()))
 
+                # Convert to numpy arrays and scale values
+                image_np = np.array(image.convert("RGB")) / 255.0
+                depth_np = np.array(depth) / 1000.0
+
+                # Convert to torch tensors (if needed on GPU, move to device)
+                image_tensor = torch.from_numpy(image_np).float()
+                depth_tensor = torch.from_numpy(depth_np).float()
+
+                # Generate mask tensor where depth > 0
+                mask = depth_tensor > 0
+
+                # Handle small mask regions (set center to True if the mask is too small)
+                if mask.sum() < 100:
+                    mask[105:315, 105:315] = True
+
+                # Get bounding box for mask
+                bbox = mask_to_bbox(mask.numpy())
+
+                # Append the results
+                templates.append(image_tensor)
+                depths.append(depth_tensor)
+                masks.append(mask)
+                bboxes.append(bbox)
+
+        # Return early if no templates found (empty case)
         if len(templates) == 0:
             return {'templates': None, 'masks': None, 'depths': None, 'bboxes': None, 'model_name': model_name, 'tar_file': tar_path.name}
 
-        templates = torch.stack(templates).permute(0, 3, 1, 2)
+        # Stack the list into tensors at once (vectorized)
+        templates = torch.stack(templates).permute(0, 3, 1, 2)  # (N, C, H, W) format
         depths = torch.stack(depths)
         masks = torch.stack(masks)
         bboxes = torch.tensor(np.array(bboxes))
+
+        # Apply any image processing (like cropping) if required
         if self.crop:
             templates = self.rgb_proposal_processor(templates, bboxes)
+
+        # Intrinsic matrix remains constant, so just return as tensor
         intrinsic = torch.tensor([[600, 0, 210], [0, 600, 210], [0, 0, 1]]).reshape(3, 3)
-        
-        return {"templates": templates, "masks": masks, "depths": depths, "model_name": model_name, 'tar_file': tar_path.name,
-                'intrinsic': intrinsic}
+
+        # Return the dictionary with all tensors
+        return {"templates": templates, "masks": masks, "depths": depths, "model_name": model_name, 'tar_file': tar_path.name, 'intrinsic': intrinsic}
+
 
